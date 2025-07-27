@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Scientific Calculator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style type="text/tailwindcss">
+    .btn, .sci-btn {
+      @apply rounded-full w-14 h-14 text-center flex items-center justify-center text-xl
+      bg-gradient-to-r from-green-100 to-teal-100 drop-shadow-xl 
+      hover:from-green-200 hover:to-teal-200 mx-auto; /* 👈 Only here */
+    }
+  
+    #equal {
+      @apply bg-pink-400 hover:bg-pink-500 text-white text-xl 
+      rounded-full h-14 flex items-center justify-center col-span-2 w-full; /* 👈 w-full added */
+    }
+  </style>
+  
+  
+</head>
+<body class="bg-purple-300 min-h-screen flex items-center justify-center py-10">
+  <div class="bg-gray-300 w-full max-w-md mx-auto rounded-3xl shadow-2xl p-6">
+
+    <!-- Display -->
+    <div class="bg-gradient-to-r from-green-200 to-teal-200 rounded-full shadow-xl mb-6">
+      <input id="display" type="text" class="w-full h-16 rounded-full text-right px-4 text-4xl bg-transparent focus:outline-none" placeholder="0" />
+    </div>
+
+    <!-- Basic Buttons -->
+    <div class="grid grid-cols-4 gap-4 text-gray-900 font-medium opacity-90 mb-4">
+      <button class="btn">clr</button>
+      <button class="btn">DEL</button>
+      <button class="btn">%</button>
+      <button class="btn">/</button>
+
+      <button class="btn">7</button>
+      <button class="btn">8</button>
+      <button class="btn">9</button>
+      <button class="btn">*</button>
+
+      <button class="btn">4</button>
+      <button class="btn">5</button>
+      <button class="btn">6</button>
+      <button class="btn">-</button>
+
+      <button class="btn">1</button>
+      <button class="btn">2</button>
+      <button class="btn">3</button>
+      <button class="btn">+</button>
+
+      <button class="btn">.</button>
+      <button class="btn">0</button>
+      <button id="equal">=</button>
+    </div>
+
+    <!-- Scientific Toggle -->
+    <div class="flex justify-center mb-4">
+      <button id="toggleSci" class="bg-yellow-300 text-black px-4 py-2 mt-4 rounded-full shadow-md hover:bg-yellow-400">
+        Scientific 🔽
+      </button>
+    </div>
+
+    <!-- Scientific Buttons -->
+    <div id="sciFunctions" class="flex flex-wrap justify-center gap-4 hidden">
+      <button class="sci-btn">sin</button>
+      <button class="sci-btn">cos</button>
+      <button class="sci-btn">tan</button>
+      <button class="sci-btn">log</button>
+      <button class="sci-btn">ln</button>
+      <button class="sci-btn">√</button>
+      <button class="sci-btn">π</button>
+      <button class="sci-btn">e</button>
+      <button class="sci-btn">x²</button>
+      <button class="sci-btn">xʸ</button>
+      <button class="sci-btn" id="degBtn">DEG</button>
+    </div>
+
+  </div>
+  <script>
+    const input = document.getElementById("display");
+    const buttons = document.querySelectorAll(".btn, .sci-btn");
+    const equalBtn = document.getElementById("equal");
+    const sciToggle = document.getElementById("toggleSci");
+    const sciBox = document.getElementById("sciFunctions");
+    const degBtn = document.getElementById("degBtn");
+    let isDeg = true;
+  
+    // Toggle Scientific Buttons
+    sciToggle.addEventListener("click", () => {
+      sciBox.classList.toggle("hidden");
+    });
+  
+    // Handle button clicks (0-9, +, -, sin, cos, etc.)
+    buttons.forEach(button => {
+      button.addEventListener("click", () => {
+        const value = button.textContent.trim();
+  
+        if (value === "clr") {
+          input.value = "";
+        } else if (value === "DEL") {
+          input.value = input.value.slice(0, -1);
+        } else if (value === "DEG" || value === "RAD") {
+          isDeg = !isDeg;
+          degBtn.textContent = isDeg ? "DEG" : "RAD";
+        } else if (["sin", "cos", "tan", "log", "ln", "√"].includes(value)) {
+          input.value += value + "(";  // Auto-add "(" for functions
+        } else if (value === "π") {
+          input.value += Math.PI;
+        } else if (value === "e") {
+          input.value += Math.E;
+        } else if (value === "x²") {
+          input.value += "**2";
+        } else if (value === "xʸ") {
+          input.value += "**";
+        } else {
+          input.value += value;
+        }
+      });
+    });
+    function areBracketsBalanced(expr) {
+  let stack = [];
+  for (let char of expr) {
+    if (char === '(') stack.push('(');
+    else if (char === ')') {
+      if (!stack.length) return false;
+      stack.pop();
+    }
+  }
+  return stack.length === 0;
+}
+
+    // ========== EQUAL BUTTON (FULLY FIXED!) ==========
+    equalBtn.addEventListener("click", () => {
+  try {
+    let expression = input.value;
+
+    // Replace math functions
+    expression = expression
+      .replace(/sin\(/g, 'Math.sin(')
+      .replace(/cos\(/g, 'Math.cos(')
+      .replace(/tan\(/g, 'Math.tan(')
+      .replace(/log\(/g, 'Math.log10(')
+      .replace(/ln\(/g, 'Math.log(')
+      .replace(/√\(/g, 'Math.sqrt(')
+      .replace(/π/g, Math.PI)
+      .replace(/e/g, Math.E);
+
+    // 🔧 Auto-close brackets
+    const openBrackets = (expression.match(/\(/g) || []).length;
+    const closeBrackets = (expression.match(/\)/g) || []).length;
+
+    if (openBrackets > closeBrackets) {
+      expression += ")".repeat(openBrackets - closeBrackets);
+    }
+
+    // DEG to RAD conversion
+    if (isDeg) {
+      expression = expression.replace(/Math\.(sin|cos|tan)\(([^()]+?)\)/g,
+        (_, fn, val) => `Math.${fn}((${val}) * Math.PI / 180)`);
+    }
+
+    const result = eval(expression);
+    input.value = (isNaN(result) || !isFinite(result)) ? "Error" : result.toFixed(6);
+  } catch (e) {
+    input.value = "Error";
+    console.error(e);
+  }
+});
+
+
+  </script>
+  
+</body>
+</html>
